@@ -1,0 +1,6 @@
+{
+  "name": "Furniture Return Reason Analyser",
+  "description": "Evidence-Based Root Cause Detection for Preventable Furniture Returns with cost, service, emission, and reliability trade-offs.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

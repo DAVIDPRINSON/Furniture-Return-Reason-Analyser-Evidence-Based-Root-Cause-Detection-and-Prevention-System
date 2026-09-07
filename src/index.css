@@ -1,0 +1,45 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #050505;
+  --surface: #0d0d0d;
+  --surface-hover: #141414;
+  --border: #1f1f1f;
+  --border-bright: #2f2f2f;
+  --accent: #00f0ff;
+  --danger: #ff0055;
+  --success: #00ff66;
+  --warning: #ffb700;
+  --text-dim: #666666;
+  --text-muted: #888888;
+  --text: #e0e0e0;
+}
+
+body {
+  background-color: #050505;
+  color: #e0e0e0;
+  font-family: 'JetBrains Mono', monospace, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas;
+}
+
+/* Precision High Density Scrollbars */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: #050505;
+}
+::-webkit-scrollbar-thumb {
+  background: #1f1f1f;
+  border-radius: 2px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #00f0ff88;
+}
+
+/* High Density Grid Lines Helper */
+.hd-grid-bg {
+  background-image: linear-gradient(to right, #141414 1px, transparent 1px),
+                    linear-gradient(to bottom, #141414 1px, transparent 1px);
+  background-size: 20px 20px;
+}
