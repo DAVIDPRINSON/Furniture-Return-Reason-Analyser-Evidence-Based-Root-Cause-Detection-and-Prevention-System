@@ -1,6 +1,19 @@
 import React, { useState, useMemo } from "react";
 import { generateDemoDataset } from "./data/demoDataset";
-import { ReturnRecord, ValidationStatus } from "./types";
+import {
+  ReturnRecord,
+  ValidationStatus,
+  ScoringWeights,
+  ModelThresholds,
+  CostModelFactors,
+  UserPersona,
+} from "./types";
+import {
+  DEFAULT_SCORING_WEIGHTS,
+  DEFAULT_THRESHOLDS,
+  DEFAULT_COST_FACTORS,
+} from "./data/taxonomy";
+import { USER_PERSONAS } from "./data/assumptions";
 import { analyzeReturnRecord } from "./services/analyzer";
 import { exportToCSV } from "./services/export";
 import { Navbar } from "./components/Navbar";
@@ -16,8 +29,9 @@ import { DataQualityView } from "./components/DataQualityView";
 import { ExecutiveBrief } from "./components/ExecutiveBrief";
 import { MethodologyView } from "./components/MethodologyView";
 import { ReturnDetailModal } from "./components/ReturnDetailModal";
+import { SettingsModal } from "./components/SettingsModal";
 import { LandingPage } from "./components/LandingPage";
-import { CheckCircle2, AlertCircle, X } from "lucide-react";
+import { CheckCircle2, AlertCircle, X, ChevronRight, Sliders } from "lucide-react";
 
 export default function App() {
   // Master state initialized with 650 synthetic bulky furniture returns
@@ -28,11 +42,55 @@ export default function App() {
   const [useAiMode, setUseAiMode] = useState<boolean>(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
+  // Settings & Calibration state
+  const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
+  const [scoringWeights, setScoringWeights] = useState<ScoringWeights>({ ...DEFAULT_SCORING_WEIGHTS });
+  const [modelThresholds, setModelThresholds] = useState<ModelThresholds>({ ...DEFAULT_THRESHOLDS });
+  const [costFactors, setCostFactors] = useState<CostModelFactors>({ ...DEFAULT_COST_FACTORS });
+
+  // User Persona state
+  const [currentPersona, setCurrentPersona] = useState<UserPersona>(USER_PERSONAS[0]);
+
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => {
       setToastMessage((cur) => (cur === msg ? null : cur));
-    }, 4000);
+    }, 4500);
+  };
+
+  // Live Recalibration of entire dataset with custom scoring weights & thresholds
+  const handleApplySettings = (
+    newWeights: ScoringWeights,
+    newThresholds: ModelThresholds,
+    newCostFactors: CostModelFactors
+  ) => {
+    setScoringWeights(newWeights);
+    setModelThresholds(newThresholds);
+    setCostFactors(newCostFactors);
+
+    setRecords((prev) =>
+      prev.map((r) => {
+        const analysis = analyzeReturnRecord(r, newWeights, newThresholds, newCostFactors);
+        return {
+          ...r,
+          analysed_category: analysis.category,
+          analysed_root_cause: analysis.root_cause,
+          analysed_preventability: analysis.preventability,
+          confidence_score: analysis.confidence_score,
+          priority_score: analysis.priority_score,
+          priority_level: analysis.priority_level,
+          recommended_action: analysis.recommended_action,
+          evidence_points: analysis.evidence_points,
+          evidence_breakdown: analysis.evidence_breakdown,
+          total_cost: analysis.total_cost || r.total_cost,
+          estimated_co2e_kg: analysis.estimated_co2e_kg || r.estimated_co2e_kg,
+        };
+      })
+    );
+
+    showToast(
+      `Dataset re-indexed: ${records.length} returns recalibrated with updated DEFRA emission & scoring weights.`
+    );
   };
 
   // CSV Upload Handler
@@ -72,16 +130,21 @@ export default function App() {
             rowData[h] = row[idx] || "";
           });
 
-          // Run real analyzer engine
-          const analysis = analyzeReturnRecord({
-            return_text: rowData.return_text || rowData.customer_feedback || "",
-            original_return_reason: rowData.original_return_reason || rowData.reason || "Defective",
-            inspection_finding: rowData.inspection_finding || rowData.inspection || "",
-            packaging_condition: (rowData.packaging_condition as any) || "INTACT",
-            delivery_condition: (rowData.delivery_condition as any) || "NORMAL",
-            listing_title: rowData.product_name || "Uploaded Furniture Item",
-            customer_action: rowData.customer_action || "Standard Return Portal",
-          });
+          // Run real analyzer engine with active weights
+          const analysis = analyzeReturnRecord(
+            {
+              return_text: rowData.return_text || rowData.customer_feedback || "",
+              original_return_reason: rowData.original_return_reason || rowData.reason || "Defective",
+              inspection_finding: rowData.inspection_finding || rowData.inspection || "",
+              packaging_condition: (rowData.packaging_condition as any) || "INTACT",
+              delivery_condition: (rowData.delivery_condition as any) || "NORMAL",
+              listing_title: rowData.product_name || "Uploaded Furniture Item",
+              customer_action: rowData.customer_action || "Standard Return Portal",
+            },
+            scoringWeights,
+            modelThresholds,
+            costFactors
+          );
 
           newRecords.push({
             return_id: rowData.return_id || `RET-UP-${1000 + i}`,
@@ -201,9 +264,46 @@ export default function App() {
           setActiveTab(tab);
           setShowLanding(false);
         }}
+        currentPersona={currentPersona}
+        onSelectPersona={(persona) => {
+          setCurrentPersona(persona);
+          showToast(`Workspace switched to [${persona.name}] focus mode.`);
+        }}
+        onOpenSettings={() => setIsSettingsOpen(true)}
         useAiMode={useAiMode}
         onToggleAiMode={() => setUseAiMode((prev) => !prev)}
+        recordCount={records.length}
       />
+
+      {/* Active Persona Context Ribbon */}
+      <div className="bg-[#080808] border-b border-[#161616] px-4 py-1.5 text-[10px] flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <span className="text-[#666666] uppercase">ACTIVE_WORKSPACE_ROLE:</span>
+          <span className="font-bold text-[#00f0ff] uppercase">[{currentPersona.id}] {currentPersona.name}</span>
+          <span className="text-[#333333] hidden sm:inline">//</span>
+          <span className="text-[#888888] hidden md:inline">{currentPersona.description}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-[#555555] hidden sm:inline">FOCUS_METRICS:</span>
+          <div className="flex items-center gap-1">
+            {currentPersona.focus_metrics.map((m, idx) => (
+              <span
+                key={idx}
+                className="px-1.5 py-0.2 bg-[#121212] text-[#aaaaaa] border border-[#1f1f1f] rounded-[2px] text-[9px]"
+              >
+                {m}
+              </span>
+            ))}
+          </div>
+          <button
+            onClick={() => setIsSettingsOpen(true)}
+            className="flex items-center gap-1 text-[9px] text-[#00f0ff] hover:underline ml-2"
+          >
+            <Sliders className="w-3 h-3" />
+            <span>CALIBRATE</span>
+          </button>
+        </div>
+      </div>
 
       {/* Main App Canvas */}
       <main className="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-4 space-y-4">
@@ -269,6 +369,17 @@ export default function App() {
         )}
       </main>
 
+      {/* Engine Calibration Settings Modal */}
+      <SettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        currentWeights={scoringWeights}
+        currentThresholds={modelThresholds}
+        currentCostFactors={costFactors}
+        onApplySettings={handleApplySettings}
+        recordCount={records.length}
+      />
+
       {/* Toast Notification */}
       {toastMessage && (
         <div className="fixed bottom-4 right-4 z-50 bg-[#0d0d0d] text-[#e0e0e0] text-[11px] font-mono px-3 py-2 rounded-[2px] shadow-[0_0_15px_rgba(0,240,255,0.25)] flex items-center gap-2 border border-[#00f0ff] animate-in fade-in slide-in-from-bottom-2">
@@ -317,6 +428,13 @@ export default function App() {
             </button>
             <span className="text-[#333333]">//</span>
             <button
+              onClick={() => setIsSettingsOpen(true)}
+              className="hover:text-[#00f0ff] transition-colors cursor-pointer"
+            >
+              [SCORING_WEIGHTS]
+            </button>
+            <span className="text-[#333333]">//</span>
+            <button
               onClick={handleDownloadDemoCSV}
               className="hover:text-[#00ff66] transition-colors cursor-pointer"
             >
@@ -324,7 +442,7 @@ export default function App() {
             </button>
           </div>
           <div className="text-[10px] text-[#444444]">
-            SYNTHETIC BENCHMARK &bull; BUILD 2026.09.07
+            SYNTHETIC BENCHMARK &bull; BUILD 2026.09.30 &bull; 100% OPERATIONAL
           </div>
         </div>
       </footer>

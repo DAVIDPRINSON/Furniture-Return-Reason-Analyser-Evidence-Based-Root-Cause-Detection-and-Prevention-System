@@ -78,12 +78,25 @@ $$\text{Objective} = \min(\text{Financial Cost}) \times \min(\text{Turnaround SL
   - Malformed dimension strings (`LxWxH`)
   - Missing warehouse teardown audit percentages
 
-### 10. Executive Strategy Brief (`ExecutiveBrief.tsx`)
-- Executive memorandum formatted for Steering Committees and VP-level reviews.
-- Formulates a concrete 30-60-90 day execution roadmap.
-- One-click text export and print-ready executive memo.
+### 10. Executive Strategy Brief & Audit Registers (`ExecutiveBrief.tsx`)
+- Executive memorandum formatted for Steering Committees and VP-level reviews with concrete 30-60-90 day execution roadmaps.
+- **Stakeholder Hypotheses Matrix**: Explicit mapping of functional requirements, hypotheses, and empirical validation milestones across Operations, Product, Content, Logistics, Sustainability, Support, and Management.
+- **Enterprise Risk Register**: Comprehensive risk audit (false positives, data bias, missing telemetry, packaging ambiguity) with mitigation fail-safes and owner assignments.
+- **Preventive Engineering Action Registry**: Action items tracking engineering change orders, packaging ECT upgrades, 3D listing specs, and freight SLA enforcement with interactive status transitions.
+- One-click summary text export and print-ready executive memo.
 
-### 11. Methodology & Taxonomy Register (`MethodologyView.tsx`)
+### 11. Engine Calibration Settings & DEFRA Factors (`SettingsModal.tsx`)
+- Configurable multi-source evidence scoring weights ($W_{text}, W_{insp}, W_{prod}, W_{list}, W_{act}, W_{hist}, W_{val}$).
+- Real-time normalization to 100% and dynamic recalculation across the entire dataset.
+- Configurable confidence thresholds and review queue ranges.
+- Configurable DEFRA / EPA vehicle freight emission standards (0.28 kg/km light van, 0.36 kg/km freight, 0.09 kg/km EV fleet) directly addressing empirical ESG reporting.
+
+### 12. Multi-Stakeholder Workspace Persona Switcher
+- **Operations Analyst**: Triage leads focusing on avoidable pickup rates, freight costs, delivery mishandling, and anomalous returns.
+- **Product & Engineering Team**: Quality & packaging engineers auditing SKU defect clusters, joint tear-outs, and validation agreement.
+- **Operations & Sustainability Director**: Executive leadership monitoring reverse logistics cost, transport CO2e emissions, and multi-objective strategy balance.
+
+### 13. Methodology & Taxonomy Register (`MethodologyView.tsx`)
 - Transparent documentation of multi-source evidence scoring formulas:
   - Customer NLP feedback weight (25%)
   - Physical inspection weight (35%)
